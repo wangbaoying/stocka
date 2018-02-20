@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="js/mini_require.js"></script>
+    <script type="text/javascript" src="js/3rd/jquery.js"></script>
+    <script type="text/javascript" src="js/3rd/lodash.js"></script>
+    <script type="text/javascript" src="js/3rd/moment.js"></script>
+    <script type="text/javascript" src="js/3rd/echarts.js"></script>
+    <script type="text/javascript" src="js/3rd/pinyin.js"></script>
+    <script type="text/javascript" src="js/3rd/jspdf.js"></script>
+
+    <script type="text/javascript" src="js/stock/websqldb.js"></script>
+    <script type="text/javascript" src="js/stock/utils/typeofex.js"></script>
+    <script type="text/javascript" src="js/stock/utils/promise.js"></script>
+    <script type="text/javascript" src="js/stock/utils/ajax.js"></script>
+    <script type="text/javascript" src="js/stock/fetch/index.js"></script>
+    <script type="text/javascript" src="js/stock/fetch/base.js"></script>
+    <script type="text/javascript" src="js/stock/fetch/daily.js"></script>
+    <title>Fetch KLine Data</title>
+    <style>
+        div.progress-bar > div {
+            border: 1px solid #F00;
+            width: 500px;
+        }
+
+        div.progress-bar > div > div { /* .text-ellipsis */
+            /* text-overflow: ellipsis; */
+            /* overflow: hidden; */
+            width: 0%;
+            background-color: blue;
+            height: 15px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+<div class="progress-bar">
+    <div><div class="progress-bar0">&nbsp;</div></div>
+    <div><div class="progress-bar1">&nbsp;</div></div>
+    <div><div class="progress-bar2">&nbsp;</div></div>
+</div>
+<hr/>
+<button id="fetchAll">下载 全部(沪深)</button>
+<br/>
+<button id="fetchDataB">下载 基本面信息</button>
+<br/>
+<input id="sNo" value="000016"/>
+<button id="fetchData">下载数据</button>
+<button id="clearData">清除数据</button>
+<button id="checkData">数据量</button>
+<br/>
+显示
+<input id="fDays" value="30"/>日
+<button id="fenxi02">K线</button>
+<br/>
+<div id="kline" style="width: 600px;height:400px;"></div>
+<br/>
+<input id="xNo" value="600787"/>
+<input id="xDate" value="2016-01-13"/>前
+<input id="xDays" value="30"/>日
+<button id="fenxi03">均价</button>
+<pre id="xResult"></pre>
+<br/>
+
+<button id="jspdf1">Gen PDF</button>
+
+<br/>
+
+
+<script type="text/javascript" src="js/index.js"></script>
+</body>
+</html>

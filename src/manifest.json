@@ -1,0 +1,26 @@
+{
+   "manifest_version": 2,
+   "name": "Stock picking tools",
+   "version": "1.0",
+   "offline_enabled": true,
+   "author": "yuhere@gmail.com",
+   "background": {
+      "persistant": false,
+      "scripts": [ "background.js" ]
+   },
+   "browser_action": {
+      "default_icon": "assets/default32.png"
+   },
+   "description": "For picking stocks.",
+   "icons": {
+      "128": "assets/default128.png",
+      "16":  "assets/default16.png",
+      "48":  "assets/default48.png"
+   },
+   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+   "permissions": [ 
+      "background", 
+      "tabs",
+      "*://*.finance.sina.com.cn/*"
+   ]
+}

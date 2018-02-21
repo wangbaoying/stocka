@@ -8,6 +8,7 @@ define("fetch/base", ["require", "exports", "module"], function (require, export
   var pinyin = require('pinyin');
   var promise1 = require('utils/promise').promise1;
   var a_get = require('utils/ajax').do_get;
+  var do_get_a = require('utils/ajax').do_get_a;
 
   var $parse2dom = function (htmlstr, start_str, end_str) {
     var pos0 = htmlstr.indexOf(start_str);
@@ -29,7 +30,9 @@ define("fetch/base", ["require", "exports", "module"], function (require, export
 
   // 获得 页数 列表
   var get_page_list = function () {
-    return a_get('http://vip.stock.finance.sina.com.cn/q/go.php/vIR_CustomSearch/index.phtml?sr_p=-1&order=code%7C1&p=1' // 排序
+    var xhr = $.ajaxSettings.xhr();
+    return do_get_a('http://vip.stock.finance.sina.com.cn/q/go.php/vIR_CustomSearch/index.phtml?sr_p=-1&order=code%7C1&p=1',
+      "gb2312"
     ).then(function (e) {
       var $total_div = $parse2dom(e, '<div class="number">', '</div>');
       var $list_table = $parse2dom(e, '<table class="list_table">', '</table>');
@@ -52,7 +55,8 @@ define("fetch/base", ["require", "exports", "module"], function (require, export
   var fetchThem = function () {
     // 获得指定页数的数据
     var fetch_one_page = function (pageNumber) {
-      return a_get('http://vip.stock.finance.sina.com.cn/q/go.php/vIR_CustomSearch/index.phtml?sr_p=-1&order=code%7C1&p=' + pageNumber // 排序
+      return do_get_a('http://vip.stock.finance.sina.com.cn/q/go.php/vIR_CustomSearch/index.phtml?sr_p=-1&order=code%7C1&p=' + pageNumber // 排序
+        , "gb2312"
       ).then(function (e) {
         var $list_table = $parse2dom(e, '<table class="list_table">', '</table>');
         var $trs = $list_table.find("tr:not(.head)");
@@ -68,6 +72,7 @@ define("fetch/base", ["require", "exports", "module"], function (require, export
             market_code = get_code(shref, "?q=", "&");
             market_code = market_code.substring(0, 2);
             if (market_code !== 'sz' && market_code !== 'sh') {
+              console.log("非深圳/非上海...", shref);
               continue;
             }
             row.push(_.trim($($tds[0]).text()));
@@ -84,6 +89,7 @@ define("fetch/base", ["require", "exports", "module"], function (require, export
     };
     //
     var _save = function (item) {
+      console.log(item);
       return db.execSQLI(  // do update
         " UPDATE stock_base SET " +
         " Market = ?, " +

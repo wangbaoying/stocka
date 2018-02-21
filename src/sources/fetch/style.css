@@ -1,0 +1,13 @@
+div.progress-bar > div {
+    border: 1px solid #F00;
+    width: 500px;
+}
+
+div.progress-bar > div > div { /* .text-ellipsis */
+    /* text-overflow: ellipsis; */
+    /* overflow: hidden; */
+    width: 0%;
+    background-color: blue;
+    height: 15px;
+    white-space: nowrap;
+}

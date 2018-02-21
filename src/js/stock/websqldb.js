@@ -7,7 +7,7 @@ define("websqldb", ["require", "exports", "module"], function (require, exports,
     dbName: "Py2StockDB",                 // 名称
     dbVersion: "0.1",                     // 版本
     dbDisplayName: "Py2StockDB Database", // 显示名称
-    dbEstimatedSize: 100 * 11024 * 1024   // 大小 (byte)
+    dbEstimatedSize: 1 * 1024 * 1024 * 1024   // 大小 (byte)
   };
 
   var _db = undefined;

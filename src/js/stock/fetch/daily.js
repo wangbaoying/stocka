@@ -14,7 +14,6 @@ define("fetch/daily", ["require", "exports", "module"], function (require, expor
   // http://vip.stock.finance.sina.com.cn/corp/go.php/vCI_CorpInfo/stockid/600787.phtml
   // 股本结构
   // http://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockStructure/stockid/600787.phtml
-
   // 股票代码索引
   // http://vip.stock.finance.sina.com.cn/q/go.php/vIR_CustomSearch/index.phtml
 
@@ -38,7 +37,6 @@ define("fetch/daily", ["require", "exports", "module"], function (require, expor
         // @@@@@@@@@@@@@@@@@@@@@
       })
     };
-
 
     return $.when(fetch_year_quarter(sno),
       get_last_tdate(sno)

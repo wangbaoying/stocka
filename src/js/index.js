@@ -1,6 +1,8 @@
 var $ = require('jquery');
 var _ = require('lodash');
 var db = require('websqldb');
+var saveAs = require('filesaver');
+var moment = require('moment');
 
 $("#fetchData").click(function () {
   var fdaily = require('fetch/daily');
@@ -8,6 +10,20 @@ $("#fetchData").click(function () {
   fdaily(sNo).done(function (ret) {
     console.log("fetch/daily done..", sNo);
   })
+});
+
+$("#exportDataB").click(function(){
+  return db.execSQL(
+    "SELECT * FROM stock_base " +
+    " ORDER BY SCode DESC ", []
+  ).then(function (t, r) {
+    var i021 = new Blob([ JSON.stringify(r.rows, null, 2) ], {
+        type: "text/plain;charset=utf-8"
+    });
+    var now_date = moment().format("YYYY-MM-DD");
+    var fn = "stock_base_" + now_date + ".json";
+    saveAs(i021, fn);
+  });
 });
 
 $("#clearData").click(function () {

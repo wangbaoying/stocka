@@ -7,7 +7,9 @@ define("fetch/daily", ["require", "exports", "module"], function (require, expor
   var db = require('websqldb');
   var _typeof = require('utils/typeofex');
   var promise1 = require('utils/promise').promise1;
-  var a_get = require('utils/ajax').do_get;
+  var promise2 = require('utils/promise').promise2;
+  var do_get_a = require('utils/ajax').do_get_a;
+
   //
 
   // 公司基本信息
@@ -19,11 +21,10 @@ define("fetch/daily", ["require", "exports", "module"], function (require, expor
 
   function fetch_data0(sno) {
     $(".progress-bar0").text("fetch/daily 下载日数据:" + sno);
-
     // 获取这只股票 所有的年，季度 数据，根据（年，季度）获取全部数据
     var fetch_year_quarter = function (sno) {
-      return a_get('http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/' + sno + '.phtml'
-      ).then(function (e) {
+      return do_get_a('http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/' + sno + '.phtml'
+        , "gb2312").then(function (e) {
         var pos0 = e.indexOf('<select name="year">');
         var pos1 = e.indexOf('</select>', pos0);
         var html_part = e.substring(pos0, pos1 + '</select>'.length);
@@ -35,12 +36,11 @@ define("fetch/daily", ["require", "exports", "module"], function (require, expor
         }
         return ret_arr.sort();
         // @@@@@@@@@@@@@@@@@@@@@
+      }).fail(function (err) {
+        console.log(err);
       })
     };
-
-    return $.when(fetch_year_quarter(sno),
-      get_last_tdate(sno)
-    ).then(function (yearList, ltdate) {
+    return $.when(fetch_year_quarter(sno), get_last_tdate(sno)).then(function (yearList, ltdate) {
       // ltdate日期的前一季度数据认为已经获得,因此过滤掉
       var l_year = ltdate.year(),
         l_quarter = ltdate.quarter(),
@@ -61,14 +61,52 @@ define("fetch/daily", ["require", "exports", "module"], function (require, expor
         }
       }
       //
-      return promise1(function (idx, item) {
-        return fetch_data(item[0], item[1], item[2]).progress(function () {
-          $(".progress-bar2").text("fetch/daily:" + (arguments[0] * 100) + '%   ' + item[0] + ' ' + item[1] + ' ' + item[2])
+      var tbl_data = [];
+      //
+      return promise2(function (idx, item) {
+        return fetch_data(item[0], item[1], item[2]).then(function (_tbl_data) {
+          Array.prototype.push.apply(tbl_data, _tbl_data);
+        });
+      }, fetch_detail_args_list, 1).progress(function (status, percentage) {
+        if (status === "percentage") {
+          $(".progress-bar1").text("fetch/daily:" + (percentage * 100) + '%')
+            .css("width", (percentage * 100) + '%');
+        }
+      }).then(function () {
+        var _save = function (item) {
+          return db.execSQLI(  // do update
+            " UPDATE market_history SET " +
+            " OPEN = ?, " +
+            " HIGH = ?, " +
+            " CLOSE = ?, " +
+            " LOW = ?, " +
+            " VOL = ?, " +
+            " AMOUNT = ? " +
+            " WHERE SCode = ? " +
+            " AND TDate = ? ",
+            [item[2], item[3], item[4], item[5], item[6], item[7], item[0], item[1]]
+          ).then(function (t, r) {
+            if (r.rowsAffected === 0) { // do insert when no row updated
+              return db.execSQLI(
+                "INSERT INTO market_history (SCode , TDate , " +
+                "OPEN, HIGH, CLOSE, LOW, VOL, AMOUNT ) VALUES (?,?,?,?,?,?,?,?)",
+                item
+              ).then(function (t, r) {
+                return r;
+              });
+            }
+            return r;
+          })
+        };
+        console.log("......", tbl_data);
+        return promise1(function (idx, item) {
+          return _save(item);
+        }, tbl_data).progress(function () {
+          $(".progress-bar2").text("saving:" + (arguments[0] * 100) + '%')
             .css("width", (arguments[0] * 100) + '%');
         });
-      }, fetch_detail_args_list).progress(function () {
-        $(".progress-bar1").text("fetch/daily:" + (arguments[0] * 100) + '%')
-          .css("width", (arguments[0] * 100) + '%');
+      }).fail(function (err) {
+        console.log(err);
       });
     });
   }
@@ -90,7 +128,7 @@ define("fetch/daily", ["require", "exports", "module"], function (require, expor
 
   // 获取指定 代码，年，季度的日数据.
   function fetch_data(sno, syear, sjidu) {
-    return a_get('http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/' + sno + '.phtml?year=' + syear + '&jidu=' + sjidu
+    return do_get_a('http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/' + sno + '.phtml?year=' + syear + '&jidu=' + sjidu, "gb2312"
     ).then(function (e) {
       var pos0 = e.indexOf('<table id="FundHoldSharesTable">');
       if (pos0 === -1) {
@@ -114,36 +152,7 @@ define("fetch/daily", ["require", "exports", "module"], function (require, expor
         }
       }
       $part.remove();
-      //
-      var _save = function (item) {
-        return db.execSQLI(  // do update
-          " UPDATE market_history SET " +
-          " OPEN = ?, " +
-          " HIGH = ?, " +
-          " CLOSE = ?, " +
-          " LOW = ?, " +
-          " VOL = ?, " +
-          " AMOUNT = ? " +
-          " WHERE SCode = ? " +
-          " AND TDate = ? ",
-          [item[2], item[3], item[4], item[5], item[6], item[7], item[0], item[1]]
-        ).then(function (t, r) {
-          if (r.rowsAffected === 0) { // do insert when no row updated
-            return db.execSQLI(
-              "INSERT INTO market_history (SCode , TDate , " +
-              "OPEN, HIGH, CLOSE, LOW, VOL, AMOUNT ) VALUES (?,?,?,?,?,?,?,?)",
-              item
-            ).then(function (t, r) {
-              return r;
-            });
-          }
-          return r;
-        })
-      };
-      //
-      return promise1(function (idx, item) {
-        return _save(item);
-      }, tbl_data);
+      return $.when(tbl_data);
     })
   }
 

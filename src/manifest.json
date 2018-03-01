@@ -21,6 +21,6 @@
    "permissions": [ 
       "background", 
       "tabs",
-      "*://*.finance.sina.com.cn/*"
+      "<all_urls>"
    ]
 }

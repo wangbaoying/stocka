@@ -25,3 +25,22 @@
   * 通过chrome工具栏启动插件；
   * 修改src/sources中的代码->刷新插件页面调试；
 3. `npm run d` 打包src/sources目录中的源码到dist中； 
+
+
+## 数据源
+
+
+ `http://blog.csdn.net/xp5xp6/article/details/53121481`
+ 
+ * http://img1.money.126.net/data/hs/kline/day/history/2015/1399001.json 
+ 
+
+# 命令行
+
+
+## 下载数据
+```shell
+D:\workspace\stocka>node cli\163_data.js
+```
+下载的数据保存在 `dat` 目录中.
+

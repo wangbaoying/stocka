@@ -1,0 +1,31 @@
+{
+  "name": "stocka",
+  "version": "0.0.1",
+  "private": true,
+  "description": "For picking stocks.",
+  "scripts": {
+    "deploy": "echo \"TOOD: no specified\" && exit 1",
+    "watch": "webpack --progress --colors --watch --config webpack.config/watch.js",
+    "pre-pack": "node tools/pre_pack.js",
+    "pack": "npm run pre-pack && npm run d && node tools/upver.js && npm run web-ext-build",
+    "d": "webpack --progress --colors --config webpack.config/dist.js",
+    "b": "webpack --progress --colors --config webpack.config/watch.js",
+    "web-ext-build": "web-ext build --source-dir=dist --artifacts-dir=releases --overwrite-dest",
+    "web-ext-sign": "web-ext sign --source-dir=dist --artifacts-dir=releases",
+    "re-aaa": "node cli/aaa.js",
+    "re-bbb": "node cli/bbb.js"
+  },
+  "author": "yuhere@gmail.com",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "devDependencies": {
+    "encoding": "0.1.12",
+    "moment": "2.20.1",
+    "request": "2.83.0",
+    "request-promise": "4.2.2",
+    "lodash": "4.16.4"
+  },
+  "dependencies": {}
+}

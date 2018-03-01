@@ -9655,7 +9655,7 @@ function factory(window, noGlobal) {
                                     // Support: IE<10
                                     // Accessing binary-data responseText throws an exception
                                     // (#11426)
-                                    if (xhr.responseType === "text" && typeof xhr.responseText === "string") {
+                                    if ((xhr.responseType === "text" || xhr.responseType === "") && typeof xhr.responseText === "string") {
                                         responses.text = xhr.responseText;
                                     }
 

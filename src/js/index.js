@@ -3,22 +3,54 @@ var _ = require('lodash');
 var db = require('websqldb');
 var saveAs = require('filesaver');
 var moment = require('moment');
+var promise2 = require('utils/promise').promise2;
 
 $("#fetchData").click(function () {
-  var fdaily = require('fetch/daily');
+  var fdaily = require('fetch/daily_163');
   var sNo = $("#sNo").val();
   fdaily(sNo).done(function (ret) {
     console.log("fetch/daily done..", sNo);
   })
 });
 
-$("#exportDataB").click(function(){
+var promise2_test = function () {
+
+  function rnds(l) {
+    var n = 1, m = 10;
+    var ret = [];
+    for (var i = 0; i < l; i++) {
+      ret.push(Math.floor(Math.random() * (m - n + 1) + n) * 1000);
+    }
+    return ret;
+  }
+
+  var s = rnds(30);
+  console.log(s);
+  promise2(function (idx, item) {
+    return (function (idx, item) {
+      var d = new $.Deferred;
+      setTimeout(function () {
+        console.log(item);
+        d.resolve(item);
+      }, item)
+      return d.promise();
+    })(idx, item).done(function (r) {
+      console.log("t.done", idx, r);
+    });
+  }, s, 5).progress(function () {
+    console.log("promise2.progress", arguments);
+  }).done(function () {
+    console.log("promise2.done");
+  });
+};
+
+$("#exportDataB").click(function () {
   return db.execSQL(
     "SELECT * FROM stock_base " +
     " ORDER BY SCode DESC ", []
   ).then(function (t, r) {
-    var i021 = new Blob([ JSON.stringify(r.rows, null, 2) ], {
-        type: "text/plain;charset=utf-8"
+    var i021 = new Blob([JSON.stringify(r.rows, null, 2)], {
+      type: "text/plain;charset=utf-8"
     });
     var now_date = moment().format("YYYY-MM-DD");
     var fn = "stock_base_" + now_date + ".json";
@@ -253,10 +285,10 @@ $("#fetchAll").click(function () {
 
 $("#jspdf1").click(function () {
   var jsPDF = require('jspdf');
-console.log("...", jsPDF);
+  console.log("...", jsPDF);
 
   var doc = new jsPDF();
-console.log("...", doc.getFont());
+  console.log("...", doc.getFont());
   doc.setFont("Courier");
   doc.text(20, 20, 'Hello world!中文为什么不显示.');
   doc.text(20, 30, 'This is client-side Javascript, pumping out a PDF.');

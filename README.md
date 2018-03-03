@@ -37,10 +37,14 @@
 
 # 命令行
 
-
 ## 下载数据
 ```shell
 D:\workspace\stocka>node cli\163_data.js
 ```
 下载的数据保存在 `dat` 目录中.
 
+## 分析数据
+```shell
+# 打开 修改 a0.js 的 0600000 换成指定的股票数据.
+D:\workspace\stocka>node cli\a0.js
+```

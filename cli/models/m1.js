@@ -1,16 +1,14 @@
 module.exports = {
-  name: "模型A",
-  m: function (dat, get_x) {
+  name: "模型B",
+  m: function m1(dat, get_x) {
     var ldat1 = get_x(-1);   // 获得第N天数据
     var ldat2 = get_x(-2);
     if (!ldat1 || !ldat2) return;
-    // var ldat3 = get_x(3);
-    // console.log(ldat1.date, ldat2.date, dat.date);
     if (ldat1.volume > ldat2.volume * 2) {
       return true;
     }
   },
-  n: function (dat, get_x, trade) {
+  n: function n1(dat, get_x, trade) {
     /**
      * 1. 为回测，定义卖出条件。
      *    为了能够计算总体收益率，返回出售时的损益。

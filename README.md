@@ -45,6 +45,10 @@ D:\workspace\stocka>node cli\163_data.js
 
 ## 分析数据
 ```shell
-# 打开 修改 a0.js 的 0600000 换成指定的股票数据.
-D:\workspace\stocka>node cli\a0.js
+# 采用 models/m0.js 模型分析
+#   * 打开修改 a0.js 的 0600000 换成指定的股票数据.
+D:\workspace\stocka>node cli\a0.js   # <<< a1.js 则采用 m1.js 模型分析. 
 ```
+
+> a0.js 与 a1.js 用于调试 模型。修改 `require('./models/m0.js');` 可以切换不同模型。 
+

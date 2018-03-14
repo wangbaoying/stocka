@@ -1,14 +1,47 @@
+var request = require('request');
+var path = require('path');
+var fs = require('fs');
+var encoding = require('encoding');
+var crypto = require('crypto');
+var moment = require('moment');
+var _ = require('lodash');
+
+// .........................
+var files = [
+  'models/m0.js', 
+  'models/m1.js',
+  'models/m2.js',
+  'models/m3.js',
+  'models/m4.js'
+];
+
+// 
 var mreq = require('./m-require')();
-mreq.define_by_code("aaa", "console.log('mmmm aaaa');")
-mreq.define('bbb', function (require, exports, module) {
-  var aaa = require('aaa');
-  console.log('bbbb', aaa);
-});
+function load_models(files) {
+  var arg_names = [];
+  return files.map(function(fn, idx){
+    var sourceCode = fs.readFileSync(path.join(__dirname, fn),'utf-8');
+    var id = fn;  // 相对目录
+    mreq.define_f(id, sourceCode, arg_names);
+    return {id};
+  });
+}
+//
 
-var args = ["require", "exports", "module", 'console.log("vvv")'];
-var factory_func = new (Function.prototype.bind.apply(Function, [null].concat(args)))();
 
 
 
 
-console.log(factory_func());
+
+
+
+
+var args = {  // 通用函数
+  x: ' world'
+};
+
+
+
+var model0 = mreq.require_f('models/m0.js', args);
+var model1 = mreq.require_f('models/m0.js', args);
+console.log(model0.m===model1.m, model0.n);

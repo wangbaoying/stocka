@@ -24,6 +24,7 @@ var normalizeModule = function (parentId, moduleName) {
   return moduleName;
 };
 
+
 // 
 var _mk_req = function () {
   var _ret_obj = {};
@@ -113,34 +114,63 @@ var _mk_req = function () {
     return false;
   }
 
-  /**
-   *
-   *
-   * @param moduleId
-   * @param code
-   */
   function define_by_code(moduleId, code) {
     // Object.keys(global);
     // var factory_func = new Function("require", "exports", "module", code);
     var args = ["require", "exports", "module", code];
     var factory_func = new (Function.prototype.bind.apply(Function, [null].concat(args)))();
-    var mk_define = function (moduleId, func_body) {
-      define(moduleId, function (require, exports, module) {
-        func_body.apply(null, [require, exports, module]);
-      });
-    };
-    mk_define(moduleId, factory_func);
+    _mk_define(moduleId, factory_func);
     //
     return function get_module() {
       return require(moduleId)
     }
   }
 
+  // ######################################################
+  function _mk_define(moduleId, func_body, o_funcs) {
+    define(moduleId, function (require, exports, module) {
+      func_body.apply(null, [require, exports, module].concat(o_funcs || []));
+    });
+  }
+  function _mk_define_f(moduleId, func_body) {
+    define(moduleId, function (require, exports, module) {
+      module.exports = func_body;
+    });
+  }
+
+  function define_f(moduleId, code, o_func_names) {
+    // Object.keys(global);  // 这里可以屏蔽已知的全局变量(window, documents....)
+    var signature = o_func_names || [];
+    var arg_names = ["require", "exports", "module"].concat(signature).concat([code]);
+    // 这里最好能够输出更容易看的信息。
+    var factory_func = new (Function.prototype.bind.apply(Function, [null].concat(arg_names)))();
+    define(moduleId, {
+      signature: o_func_names,
+      factory: factory_func
+    });
+  }
+
+  function require_f(moduleId, func_map) {
+    const {signature, factory} = require(moduleId);
+    const a_moduleId = "require_f_" + (new Date()).getTime();
+    const o_funcs = signature.map(function(key, idx){
+      return func_map[key];
+    });
+    _mk_define(a_moduleId, factory, o_funcs);  // 这么做是为了让 代码块 中的 "require", "exports", "module" 可以使用
+    // 
+    try {
+      const eval_value = require(a_moduleId);
+      delete _modules[a_moduleId];
+      return eval_value;
+    } catch (e) {
+      delete _modules[a_moduleId];
+      throw e;
+    }
+  }
   //
   return {
-    define, defined, define_by_code, require
+    define, defined, require, define_by_code, define_f, require_f
   }
 };
-
 
 module.exports = _mk_req;

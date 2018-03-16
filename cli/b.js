@@ -397,17 +397,19 @@ function apply_model(code, model, daily, ctx_func_list) {
       } else {
         // TODO: 回测不能进行了，是否考虑应该退出。
         if (trade.buy === undefined) {
-          ctx_args.trade.log("ERROR: 模型回测中【" + code + "】，貌似没有设定买入日期数据及买入价格。");
+          ctx_args.trade.log("WARN: 模型回测中【" + code + "】，貌似没有设定买入日期数据及买入价格。");
         }
         if (trade.sell === undefined) {
-          ctx_args.trade.log("ERROR: 模型回测中【" + code + "】，貌似没有设定卖出日期数据及卖出价格。");
+          ctx_args.trade.log("WARN: 模型回测中【" + code + "】，貌似没有设定卖出日期数据及卖出价格。");
         }
       }
     }
   } catch(e) {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error
     // TODO: 想办法重构StackTrace信息，让错误消息更容易读。
-    console.error(Error.captureStackTrace);
+    console.error("ERROR: 发生错误，在使用模型【" + model.id + "】处理代码为【" + code + "】,日期为【" + daily.date + "】数据时");
+    console.error(e);
+    // console.error(Error.captureStackTrace);
     throw e;
   }
 }

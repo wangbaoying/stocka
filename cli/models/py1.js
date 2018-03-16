@@ -107,16 +107,17 @@ function get_slice(start, end) {
   return lst;
 }
 
-function print_records(lst) {
+function print_records(lst, h) {
   function print_record_a(itm, idx) {
     if (!itm) {
-      return trade.sprintf("%-4s %-10s %-10s %-7s %-7s %3s %-8s", "No.", "代码", "日期", "前收价", "收盘价", "涨跌幅", "5日均价");
+      return trade.sprintf("%-4s %-10s %-10s %-7s %-7s %-7s %3s %-8s", "No.", "代码", "日期", "前收价", "开盘价", "收盘价", "涨跌幅", "5日均价");
     } else {
-      return trade.sprintf("%-4d %-12s %-12s %-10.2f %-10.2f %5.2f%% %-10.2f", (idx + 1), itm.code, itm.date, itm.previous_close, itm.close, itm.netchange_percent, itm.avg5);
+      return trade.sprintf("%-4d %-12s %-12s %-10.2f %-10.2f %-10.2f %5.2f%% %-10.2f", (idx + 1), itm.code, itm.date, itm.previous_close, itm.open, itm.close, itm.netchange_percent, itm.avg5);
     }
   }
-
-  trade.log(print_record_a());
+  if (!Array.isArray(lst)) return;
+  //
+  !h && trade.log(print_record_a());
   for (var i = 0; i < lst.length; i++) {
     trade.log(print_record_a(lst[i], i));
   }
@@ -139,8 +140,8 @@ module.exports = {
     var lst5 = get_slice(-7, -3);
     var lst3 = get_slice(-2, -0);
     if (lst5 && lst3 && isDoL(lst5) && isUpL(lst3)) { // 连续下跌5天后并连续上涨3天
-      print_records(lst5);
-      print_records(lst3);
+      // print_records(lst5);
+      // print_records(lst3);
       return true;
     }
     return false;
@@ -153,11 +154,17 @@ module.exports = {
      * 如果当天没有成交，以后每天都挂出涨幅3.7%的价格卖出，
      * 7天为限，大于7天没成交算失败（以收盘价卖出）。
      */
+    //
+    trade.log("符合条件：", today.date, "收盘价:", today.close);
     var tomorrow = get_x(1);
+    if (!tomorrow) { // 没有办法获得后一天数据时
+      trade.log('  不能获得后一天数据时，无法回测。');
+      return;
+    }
+    //
     var buy_price = tomorrow.open;
     trade.set_buy(tomorrow, buy_price);
-    trade.log("符合条件：", today.date, "收盘价:", today.close);
-
+    // 
     var lst5 = get_slice(-7, -3);
     var lst3 = get_slice(-2, -0);
     print_records(lst5);
@@ -166,20 +173,27 @@ module.exports = {
     trade.log('  买入...', tomorrow.date, '开盘价:', buy_price.toFixed(2));
     var target_price = buy_price * 1.037;
     // 寻找卖出点...
-    for (var i = 1; i < 8; i++) {
+    // 
+    for (var i = 1; i <= 7; i++) {
       var daily = get_x(i);
-      if (daily && daily.high > target_price) {
-        trade.log('  卖出...', daily.date, '卖出价:', target_price.toFixed(2), "损益:", (target_price - buy_price).toFixed(2));
-        trade.set_sell(daily, target_price);
+      if (!daily) { // 没有办法获得后一天数据时
+        trade.log('  不能获得后' + i + '天数据时，无法回测。');
         return;
+      } else {
+        if (daily.high > target_price) {
+          trade.log('  卖出...', daily.date, '卖出价:', target_price.toFixed(2), "损益:", (target_price - buy_price).toFixed(2));
+          print_records(get_slice(1, i));
+          trade.set_sell(daily, target_price);
+          return;
+        }        
       }
     }
     //
     if (daily) {
       // 7天为限，大于7天没成交算失败（以收盘价卖出）。
       trade.log('  失败，卖出...', daily.date, '卖出价:', daily.close, "损益:", (daily.close - buy_price).toFixed(2));
+      print_records(get_slice(1, 7));
       trade.set_sell(daily, daily.close);
-
     }
   }
 };

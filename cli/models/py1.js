@@ -56,9 +56,9 @@ function isUpC(n) {
   }
   // 
   if (iUp) {   // 输出这n日数据作为参考
-    var _out = trade.sprintf("%-4s %-10s %-7s %-7s %3s %-8s", "No.", "日期", "前收价", "收盘价", "涨跌幅", "5日均价") + "\n" +
+    var _out = trade.sprintf("%-4s %-10s %-7s %-7s %3s %-8s", "No.", "日期", "前收价", "收盘价", "涨跌幅", "5日均价", "流通股本") + "\n" +
       lst.map(function (itm, idx) {
-        return trade.sprintf("%-4d %-12s %-10.2f %-10.2f %5.2f%% %-10.2f", (idx + 1), itm.date, itm.previous_close, itm.close, itm.netchange_percent, itm.avg5)
+        return trade.sprintf("%-4d %-12s %-10.2f %-10.2f %5.2f%% %-10.2f %-10f", (idx + 1), itm.date, itm.previous_close, itm.close, itm.netchange_percent, itm.avg5, itm.circulating_capital)
       }).join("\n");
     console.log(_out);
   }
@@ -71,7 +71,9 @@ function isDoL(lst) {
   for (var i = 0; i < lst.length; i++) {
     var pvda = lst[i - 1],
       vda = lst[i];
-    if (vda.netchange_percent >= 0) {
+    if (vda.name.substring(0, 2) === 'DR'
+      || vda.netchange_percent >= 0
+    ) {
       ret = false;
       break;
     }
@@ -85,7 +87,9 @@ function isUpL(lst) {
   for (var i = 0; i < lst.length; i++) {
     var pvda = lst[i - 1],
       vda = lst[i];
-    if (vda.netchange_percent <= 0) {
+    if (vda.name.substring(0, 2) === 'DR'
+      || vda.netchange_percent <= 0
+    ) {
       ret = false;
       break;
     }
@@ -99,7 +103,11 @@ function get_slice(start, end) {
   var lst = [];
   for (var i = start; i <= end; i++) {
     var x = get_x(i);
-    if (!x || Number.isNaN(x.netchange_percent)) {
+    if (!x
+      || Number.isNaN(x.netchange_percent)        // 非停盘日
+    // || x.name.substring(0, 2) === 'DR'    // 发生了什么事？
+    // || today.circulating_capital !== x.circulating_capital // 发生了什么事，流通市值发生变化。
+    ) {
       return;
     }
     lst.push(get_x(i));
@@ -110,9 +118,9 @@ function get_slice(start, end) {
 function print_records(lst, h) {
   function print_record_a(itm, idx) {
     if (!itm) {
-      return trade.sprintf("%-4s %-10s %-10s %-7s %-7s %-7s %3s %-8s", "No.", "代码", "日期", "前收价", "开盘价", "收盘价", "涨跌幅", "5日均价");
+      return trade.sprintf("%-4s %-10s %-10s %-7s %-7s %-7s %3s %-7s", "No.", "代码", "日期", "前收价", "开盘价", "收盘价", "涨跌幅", "5日均价");
     } else {
-      return trade.sprintf("%-4d %-12s %-12s %-10.2f %-10.2f %-10.2f %5.2f%% %-10.2f", (idx + 1), itm.code, itm.date, itm.previous_close, itm.open, itm.close, itm.netchange_percent, itm.avg5);
+      return trade.sprintf("%-4d %-12s %-12s %-10.2f %-10.2f %-10.2f %5.2f%% %-10.2f", (idx + 1), itm.code, itm.date, itm.previous_close, itm.open, itm.close, itm.netchange_percent, itm.avg5, itm.circulating_capital);
     }
   }
 
@@ -146,8 +154,25 @@ module.exports = {
     var lst3 = get_slice(-2, -0);
     if (lst5 && lst3 && isDoL(lst5) && isUpL(lst3)) { // 连续下跌5天后并连续上涨3天
 
-      var last5 = lst5[lst5.length - 1]; // 下跌过程中最后一天
-      if (last5.close < last5.avg5) {  // 跌破5日均价
+      var last5_f = lst5[0],
+        last5_l = lst5[lst5.length - 1], // 下跌过程中最后一天
+        net_percent5 = (last5_l.close - last5_f.open) / last5_f.open;  // 跌幅
+      var last3_f = lst3[0],
+        last3_l = lst3[lst3.length - 1], // 上涨过程中最后一天
+        net_percent3 = (last3_l.close - last3_f.open) / last3_f.open;  // 涨幅
+      if (last5_l.close < last5_l.avg5      // 跌破5日均价
+        && last3_l.close > last3_l.avg5     // 上传 5 日均价
+          // 
+        && net_percent5 < -0.05     // 前5日整体涨跌幅小于 -5% 
+        && net_percent3 > 0.05      // 后3日整体涨跌幅大于  5%
+      ) {
+
+        trade.log("符合条件：", today.date, "收盘价:", today.close, "流通股本:", today.circulating_capital);
+        var lst5 = get_slice(-7, -3);
+        var lst3 = get_slice(-2, -0);
+        print_records(lst5);
+        print_records(lst3);
+
         return true;
       }
       // print_records(lst5);
@@ -164,8 +189,8 @@ module.exports = {
      * 如果当天没有成交，以后每天都挂出涨幅3.7%的价格卖出，
      * 7天为限，大于7天没成交算失败（以收盘价卖出）。
      */
-      //
-    trade.log("符合条件：", today.date, "收盘价:", today.close, "流通股本:", today.circulating_capital);
+    //
+    //
     var tomorrow = get_x(1);
     if (!tomorrow) { // 没有办法获得后一天数据时
       trade.log('  不能获得后一天数据时，无法回测。');
@@ -175,10 +200,6 @@ module.exports = {
     var buy_price = tomorrow.open;
     trade.set_buy(tomorrow, buy_price);
     // 
-    var lst5 = get_slice(-7, -3);
-    var lst3 = get_slice(-2, -0);
-    print_records(lst5);
-    print_records(lst3);
 
     trade.log('  买入...', tomorrow.date, '开盘价:', buy_price.toFixed(2));
     var target_price = buy_price * 1.037;
@@ -190,6 +211,13 @@ module.exports = {
         trade.log('  不能获得后' + i + '天数据时，无法回测。');
         return;
       } else {
+        if (daily.name.substring(0, 2) === 'DR') {  // 发生了什么事？
+          trade.log('  发生了什么事吗？', daily.date, ' 1：流通股本发生变化；2：其它；', " 损益: 0.00");
+          print_records(get_slice(1, i));
+          trade.set_sell(daily, buy_price);
+          return;
+        }
+        // 
         if (daily.high > target_price) {
           trade.log('  卖出...', daily.date, '卖出价:', target_price.toFixed(2), "损益:", (target_price - buy_price).toFixed(2));
           print_records(get_slice(1, i));

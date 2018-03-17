@@ -256,6 +256,7 @@ function csv_to_list(csv_content) {
     // 流通市值 （Circulating market value）
     // 总市值 （Total market value）
     item.circulating_capital = _.toNumber((item.circulating_market_value / item.close).toFixed(2));
+    item.total_capital = _.toNumber((item.total_market_value / item.close).toFixed(2));
     //
     item.avg5 = get_avg_x(idx, 5, 'close');
     item.avg10 = get_avg_x(idx, 10, 'close');
@@ -389,8 +390,6 @@ function apply_model(code, model, daily, ctx_func_list) {
   try {
     // 获取模型
     var _eval = mreq.require_f(model.id, ctx_args);
-    //
-
     //
     // 符合买入条件
     if (_eval.m.apply(null)) {

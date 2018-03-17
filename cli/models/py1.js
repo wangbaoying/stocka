@@ -115,6 +115,7 @@ function print_records(lst, h) {
       return trade.sprintf("%-4d %-12s %-12s %-10.2f %-10.2f %-10.2f %5.2f%% %-10.2f", (idx + 1), itm.code, itm.date, itm.previous_close, itm.open, itm.close, itm.netchange_percent, itm.avg5);
     }
   }
+
   if (!Array.isArray(lst)) return;
   //
   !h && trade.log(print_record_a());
@@ -135,14 +136,23 @@ module.exports = {
      * 且5日均线正在上穿10日均线或者当天收盘价大于10日均线价格。
      *
      * 阳线: 收盘价高于开盘价是为阳线，收盘价低于开盘价是为阴线。
+     * 小盘股：流通股本小于 5 亿
      */
-
+    if (today.circulating_capital > 500000000) {
+      return false;
+    }
+    // 
     var lst5 = get_slice(-7, -3);
     var lst3 = get_slice(-2, -0);
     if (lst5 && lst3 && isDoL(lst5) && isUpL(lst3)) { // 连续下跌5天后并连续上涨3天
+
+      var last5 = lst5[lst5.length - 1]; // 下跌过程中最后一天
+      if (last5.close < last5.avg5) {  // 跌破5日均价
+        return true;
+      }
       // print_records(lst5);
       // print_records(lst3);
-      return true;
+      // return true;
     }
     return false;
   },
@@ -154,8 +164,8 @@ module.exports = {
      * 如果当天没有成交，以后每天都挂出涨幅3.7%的价格卖出，
      * 7天为限，大于7天没成交算失败（以收盘价卖出）。
      */
-    //
-    trade.log("符合条件：", today.date, "收盘价:", today.close);
+      //
+    trade.log("符合条件：", today.date, "收盘价:", today.close, "流通股本:", today.circulating_capital);
     var tomorrow = get_x(1);
     if (!tomorrow) { // 没有办法获得后一天数据时
       trade.log('  不能获得后一天数据时，无法回测。');
@@ -185,7 +195,7 @@ module.exports = {
           print_records(get_slice(1, i));
           trade.set_sell(daily, target_price);
           return;
-        }        
+        }
       }
     }
     //

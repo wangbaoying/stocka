@@ -221,13 +221,13 @@ function csv_to_list(csv_content) {
     if (_.isNaN(tmp)) {
       throw("ERR:" + f_basename + "无效总市值 " + columns[0] + ' ' + columns[13]);
     }
-    x_dat.total_cap = tmp;
+    x_dat.total_market_value = tmp;
     // 流通市值
     tmp = _.toNumber(columns[14]);
     if (_.isNaN(tmp)) {
       throw("ERR:" + f_basename + "无效流通市值 " + columns[0] + ' ' + columns[14]);
     }
-    x_dat.total_cap_c = tmp;
+    x_dat.circulating_market_value = tmp;
     // ################################################################
     //
     list.push(x_dat);
@@ -251,6 +251,12 @@ function csv_to_list(csv_content) {
       return ret;
     }
 
+    // 流通股本 (Circulating share capital)
+    // 总股本（Total share capital）
+    // 流通市值 （Circulating market value）
+    // 总市值 （Total market value）
+    item.circulating_capital = _.toNumber((item.circulating_market_value / item.close).toFixed(2));
+    //
     item.avg5 = get_avg_x(idx, 5, 'close');
     item.avg10 = get_avg_x(idx, 10, 'close');
     item.avg20 = get_avg_x(idx, 20, 'close');
@@ -331,12 +337,13 @@ function apply_model(code, model, daily, ctx_func_list) {
       history: []
     };
   }
+
   // 初始化模型结果数据结构
   init_model_result(model);
   // 构建回测上下文
   var trade = {
     logs: [],
-    matched: daily, 
+    matched: daily,
     buy: undefined,   // 买入那天的数据及买入价格。
     sell: undefined   // 卖出那天的数据及卖出价格。
   };
@@ -345,36 +352,36 @@ function apply_model(code, model, daily, ctx_func_list) {
     today: daily,
     trade: (function (trade) {
       return { // 写 history 处理
-          log: function () {
-            var args = Array.prototype.slice.call(arguments, 0);
-            args.unshift(model.id);
-            console.log.apply(console, args);
-            // trade.logs.push(args);
-          },
-          printf: function(){
-            // sprintf
-            var args = Array.prototype.slice.call(arguments, 0);
-            var cargs = [model.id, sprintf.apply(sprintf, args)];
-            console.log.apply(console, cargs);
-          },
-          sprintf,
-          set_buy: function (dat, price) {  // 设置买入日期及价格
-            if (_.isNumber(price)) {
-              trade.buy = {
-                price: price,   // 买入单价
-                daily: dat      // 买入那天的数据
-              };
-            }
-          },
-          set_sell: function (dat, price) {  // 设置卖出日期及价格
-            if (_.isNumber(price)) {
-              trade.sell = {
-                price: price,   // 卖出单价
-                daily: dat      // 卖出那天的数据
-              };
-            }
+        log: function () {
+          var args = Array.prototype.slice.call(arguments, 0);
+          args.unshift(model.id);
+          console.log.apply(console, args);
+          // trade.logs.push(args);
+        },
+        printf: function () {
+          // sprintf
+          var args = Array.prototype.slice.call(arguments, 0);
+          var cargs = [model.id, sprintf.apply(sprintf, args)];
+          console.log.apply(console, cargs);
+        },
+        sprintf,
+        set_buy: function (dat, price) {  // 设置买入日期及价格
+          if (_.isNumber(price)) {
+            trade.buy = {
+              price: price,   // 买入单价
+              daily: dat      // 买入那天的数据
+            };
           }
-        };  // 构建基于 model 的 function 列表。
+        },
+        set_sell: function (dat, price) {  // 设置卖出日期及价格
+          if (_.isNumber(price)) {
+            trade.sell = {
+              price: price,   // 卖出单价
+              daily: dat      // 卖出那天的数据
+            };
+          }
+        }
+      };  // 构建基于 model 的 function 列表。
     })(trade)
   }, ctx_func_list);
 
@@ -386,14 +393,14 @@ function apply_model(code, model, daily, ctx_func_list) {
 
     //
     // 符合买入条件
-    if (_eval.m.apply(null)) {  
-      // 将“交易”数据放入交易历史。
-      model.result[code].history.push(trade);
-  
+    if (_eval.m.apply(null)) {
       // 测试卖出点，卖出点测试后，如果没有设定买入/卖出价格则表示“测试卖出点”函数书写的不完整
       _eval.n.apply(null);
       if (trade.buy !== undefined && trade.sell !== undefined) {
         // model.result[code].netchange = trade.sell - trade.buy;
+
+        // 将“交易”数据放入交易历史。
+        model.result[code].history.push(trade);
       } else {
         // TODO: 回测不能进行了，是否考虑应该退出。
         if (trade.buy === undefined) {
@@ -404,7 +411,7 @@ function apply_model(code, model, daily, ctx_func_list) {
         }
       }
     }
-  } catch(e) {
+  } catch (e) {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error
     // TODO: 想办法重构StackTrace信息，让错误消息更容易读。
     console.error("ERROR: 发生错误，在使用模型【" + model.id + "】处理代码为【" + code + "】,日期为【" + daily.date + "】数据时");
@@ -420,13 +427,22 @@ function apply_model(code, model, daily, ctx_func_list) {
 function get_dir_files(code, dir, models) {
   var _paths = fs.readdirSync(dir);
   var _result = [];
-  if (code) {
+  if (Array.isArray(code)) {
+    for (var i = 0; i < code.length; i++) {
+      _result.push((function (bname) {
+        return function () {
+          return analysis_stock_history(bname, models);
+        }
+      })(code[i]));
+    }
+  } else if (typeof code === 'string') {
     _result.push((function (bname) {
       return function () {
         return analysis_stock_history(bname, models);
       }
     })(code));
   } else {
+    // 获得指定目录下所有股票数据文件
     for (var i = 0; i < _paths.length; i++) {
       var name = _paths[i];
       var extname = path.extname(name);
@@ -450,13 +466,23 @@ function get_dir_files(code, dir, models) {
 
 function load_models(files) {
   var ctx_names = ['today', 'get_x', 'trade'];
-  return files.map(function(fn, idx){
-    var sourceCode = fs.readFileSync(path.join(__dirname, fn),'utf-8');
+  return files.map(function (fn, idx) {
+    var sourceCode = fs.readFileSync(path.join(__dirname, fn), 'utf-8');
     var id = fn;  // 相对目录
     mreq.define_f(id, sourceCode, ctx_names);
     return {id};
   });
 }
+
+function _cal_history(his) {
+  var netchange = 0.0;
+  for (var i = 0; i < his.length; i++) {
+    var trade = his[i];
+    netchange = netchange + (trade.sell.price - trade.buy.price);
+  }
+  return netchange;
+}
+
 
 function analysis_all_stock_history(code, files) {
   var models = load_models(files);
@@ -464,13 +490,19 @@ function analysis_all_stock_history(code, files) {
   console.log("MSG:", "开始分析完成 -> ", tasks.length);
   return sequence_tasks_a(tasks).then(function (x) {
     console.log("MSG:", "分析完成 -> ", tasks.length);
+    // 输出结果
     console.log(models.map(function (itm, idx) {
       var matched_result = itm.result;
+      var total_netchange = 0.0;
       // 满足这个模型的股票代码
       var matched_codes = Object.keys(matched_result);
-      return itm.id + " \n" + matched_codes.map(function (mcode, hidx) {
-          return mcode + " -> 符合条件次数：" + matched_result[mcode].history.length;
+      var out = itm.id + " \n" +
+        matched_codes.map(function (mcode, hidx) {
+          var ch = _cal_history(matched_result[mcode].history);
+          total_netchange = total_netchange + ch;
+          return mcode + " -> 符合条件次数： " + matched_result[mcode].history.length + " 综合损益： " + ch.toFixed(2);
         }).join('\n');
+      return out + "\n" + "总体收益： " + total_netchange.toFixed(2);
     }).join("\n"));
   })
 }

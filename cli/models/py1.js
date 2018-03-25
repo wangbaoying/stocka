@@ -118,9 +118,9 @@ function get_slice(start, end) {
 function print_records(lst, h) {
   function print_record_a(itm, idx) {
     if (!itm) {
-      return trade.sprintf("%-4s %-10s %-10s %-7s %-7s %-7s %3s %-7s", "No.", "代码", "日期", "前收价", "开盘价", "收盘价", "涨跌幅", "5日均价");
+      return trade.sprintf("%-4s %-10s %-10s %-7s %-7s %-7s %3s %-7s %-7s", "No.", "代码", "日期", "前收价", "开盘价", "收盘价", "涨跌幅", "5日均价", "10日均价");
     } else {
-      return trade.sprintf("%-4d %-12s %-12s %-10.2f %-10.2f %-10.2f %5.2f%% %-10.2f", (idx + 1), itm.code, itm.date, itm.previous_close, itm.open, itm.close, itm.netchange_percent, itm.avg5, itm.circulating_capital);
+      return trade.sprintf("%-4d %-12s %-12s %-10.2f %-10.2f %-10.2f %5.2f%% %-10.2f %-10.2f", (idx + 1), itm.code, itm.date, itm.previous_close, itm.open, itm.close, itm.netchange_percent, itm.avg5, itm.avg10);
     }
   }
 
@@ -149,9 +149,14 @@ module.exports = {
     if (today.circulating_capital > 500000000) {
       return false;
     }
+    if (today.avg5 <= today.avg10) {
+      return false;
+    }
+
     // 
     var lst5 = get_slice(-7, -3);
     var lst3 = get_slice(-2, -0);
+
     if (lst5 && lst3 && isDoL(lst5) && isUpL(lst3)) { // 连续下跌5天后并连续上涨3天
 
       var last5_f = lst5[0],
@@ -163,8 +168,8 @@ module.exports = {
       if (last5_l.close < last5_l.avg5      // 跌破5日均价
         && last3_l.close > last3_l.avg5     // 上传 5 日均价
           // 
-        && net_percent5 < -0.05     // 前5日整体涨跌幅小于 -5% 
-        && net_percent3 > 0.05      // 后3日整体涨跌幅大于  5%
+        && net_percent5 < -0.1     // 前5日整体涨跌幅小于 -10% 
+        // && net_percent3 > 0.05      // 后3日整体涨跌幅大于  5%
       ) {
 
         trade.log("符合条件：", today.date, "收盘价:", today.close, "流通股本:", today.circulating_capital);

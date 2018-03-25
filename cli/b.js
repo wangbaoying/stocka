@@ -261,6 +261,7 @@ function csv_to_list(csv_content) {
     item.avg5 = get_avg_x(idx, 5, 'close');
     item.avg10 = get_avg_x(idx, 10, 'close');
     item.avg20 = get_avg_x(idx, 20, 'close');
+    item.avg30 = get_avg_x(idx, 30, 'close');
     return item;
   });
   //

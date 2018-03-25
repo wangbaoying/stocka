@@ -5,51 +5,6 @@
  *
  */
 
-var _pattern_map = {
-  A: function(get_y) {
-    var xv0 = get_y(0);
-    var xv1 = get_y(-1);
-    return xv1!==undefined && xv0.avg5 >= xv1.avg5; 
-  },
-  a: function(get_y) {
-    var xv0 = get_y(0);
-    var xv1 = get_y(-1);
-    return xv1!==undefined && xv0.avg5 < xv1.avg5;
-  }
-};
-
-function apply_pattern(idx) {
-  function get_y(vidx) {
-    var v = get_x(idx + vidx);
-    if (   v && (
-           Number.isNaN(v.netchange_percent)        // 非停盘日
-      // || v.name.substring(0, 2) === 'DR'    // 发生了什么事？
-      // || today.circulating_capital !== v.circulating_capital 
-      )) {
-      return;
-    }
-    //
-    return v;
-  }
-  var tod = get_y(0);
-  if (tod) {
-    // console.log(get_x(0).date, get_y(0) && get_y(0).date);
-    var p_keys = Object.keys(_pattern_map);
-    for (var i = 0;i<p_keys.length;i++) {
-      var p_key = p_keys[i];
-      var p_fun = _pattern_map[p_key];
-      if (p_fun(get_y)) {
-        // console.log(tod.date, '...', p_key);
-        return p_key;
-      }
-    }    
-  }
-  return '@';  // 没有匹配到pattern
-}
-
-
-// @@@@@@@@@@@@@@@@@@@@@@@@@@
-
 function get_slice(start, end) {
   end = end || 0;
   var lst = [];
@@ -89,32 +44,35 @@ const DAYS = 10;
 module.exports = {
   name: "PY2",
   m: function () {
-    if (today.circulating_capital > 500000000) {
-      return false;
-    }
 
-
-    var x = '';
-    for (var i=0-(DAYS-1);i<=0;i++) {
-      x = x + apply_pattern(i);
+    //if (today.ma20 > today.ma30 * 1.03 && today.low < today.ma30 * 1.015 &&
+    // today.low > today.ma30 * 0.99
+    // && today.close >= today.ma30
+    //  && day_1.low > today.low
+    //  && day_2.low > day_2.ma30
+    //  && day_3.low > day_3.ma30) {
+    //  return true;
+    //}
+    //else {
+    //  return false;
+    //}
+    var day_1 = get_x(-1);
+    var day_2 = get_x(-2);
+    var day_3 = get_x(-3);
+    if (!day_1 || !day_2 || !day_3) {
+      return;
     }
-    // 
-    var ptn = /(a{5,})(A{1,})$/g; // 5日均价持续在10日均价一下，如果有一天超过了10日均价则要观察一下
-    var mched = ptn.exec(x);
-    if (mched) {  // index
-      var start = 0 - mched[0].length + 1;
-      var a_list = get_slice(start, start + mched[1].length - 1);
-      var A_list = get_slice(start + mched[1].length, start + mched[1].length + mched[2].length - 1);
-      if (
-           (a_list[a_list.length-1].close - a_list[0].close) / a_list[0].close < -0.1  // 跌幅超过10%
-        && today.avg5 > today.avg10
-      ) { 
-        // trade.log(today.date, x);
-        trade.log("符合条件：", today.date, "收盘价:", today.close.toFixed(2), "流通股本:", today.circulating_capital);
-        print_records(a_list);
-        print_records(A_list);
-        return true;
-      }
+    if (today.avg20 > today.avg30 * 1.03
+      && today.low < today.avg30 * 1.015
+      && today.low > today.avg30 * 0.99
+      && today.close >= today.avg30
+      && day_1.low > today.low
+      && day_2.low > day_2.avg30
+      && day_3.low > day_3.avg30
+    ) {
+      trade.log("符合条件：", today.date, "收盘价:", today.close.toFixed(2), "流通股本:", today.circulating_capital);
+      print_records(get_slice(-3, 0));
+      return true;
     }
     return false;
   },
@@ -142,7 +100,7 @@ module.exports = {
     // 寻找卖出点...
     // 
     var wl_lst = [], daily, i = 2;
-    while (wl_lst.length<=7) {
+    while (wl_lst.length <= 7) {
       daily = get_x(i);
       if (!daily) { // 没有办法获得后一天数据时
         trade.log('  不能获得后' + i + '天数据时，无法回测。');
@@ -195,7 +153,7 @@ module.exports = {
     if (daily) {
       // 7天为限，大于7天没成交算失败（以收盘价卖出）。
       trade.log('  失败，卖出...', daily.date, '卖出价:', daily.close, "损益:", (daily.close - buy_price).toFixed(2));
-      print_records(get_slice(1, i-1));
+      print_records(get_slice(1, i - 1));
       trade.set_sell(daily, daily.close);
     }
   }

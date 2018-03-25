@@ -25,7 +25,8 @@
     "moment": "2.20.1",
     "request": "2.83.0",
     "request-promise": "4.2.2",
-    "lodash": "4.16.4"
+    "lodash": "4.16.4",
+    "brain.js": "1.1.2"
   },
   "dependencies": {}
 }

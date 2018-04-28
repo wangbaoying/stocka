@@ -52,3 +52,7 @@ D:\workspace\stocka>node cli\a0.js   # <<< a1.js 则采用 m1.js 模型分析.
 
 > a0.js 与 a1.js 用于调试 模型。修改 `require('./models/m0.js');` 可以切换不同模型。 
 
+
+这里可以直接编辑吗？
+
+
